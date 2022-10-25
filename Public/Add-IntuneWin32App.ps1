@@ -11,16 +11,16 @@ function Add-IntuneWin32App {
 
     .PARAMETER DisplayName
         Specify a display name for the Win32 application.
-    
+
     .PARAMETER Description
         Specify a description for the Win32 application.
-    
+
     .PARAMETER Publisher
         Specify a publisher name for the Win32 application.
 
     .PARAMETER AppVersion
         Specify the app version for the Win32 application.
-    
+
     .PARAMETER Developer
         Specify the developer name for the Win32 application.
 
@@ -32,25 +32,25 @@ function Add-IntuneWin32App {
 
     .PARAMETER InformationURL
         Specify the information URL for the Win32 application.
-    
+
     .PARAMETER PrivacyURL
         Specify the privacy URL for the Win32 application.
-    
+
     .PARAMETER CompanyPortalFeaturedApp
         Specify whether to have the Win32 application featured in Company Portal or not.
 
     .PARAMETER InstallCommandLine
         Specify the install command line for the Win32 application.
-    
+
     .PARAMETER UninstallCommandLine
         Specify the uninstall command line for the Win32 application.
 
     .PARAMETER InstallExperience
         Specify the install experience for the Win32 application. Supported values are: system or user.
-    
+
     .PARAMETER RestartBehavior
         Specify the restart behavior for the Win32 application. Supported values are: allow, basedOnReturnCode, suppress or force.
-    
+
     .PARAMETER DetectionRule
         Provide an array of a single or multiple OrderedDictionary objects as detection rules that will be used for the Win32 application.
 
@@ -85,7 +85,7 @@ function Add-IntuneWin32App {
         1.0.6 - (2021-08-31) Added AppVersion optional parameter
         1.0.7 - (2022-09-02) Removed break command that would prevent the Win32 app body JSON output from being display in case an error occured
         1.0.8 - (2022-10-02) Added UseAzCopy parameter switch to override the native transfer method. Specify the UseAzCopy parameter switch when uploading large applications.
-                             Added fallback removal code for the cleanup operation at the end of this function, since OneDrive's Files On Demand feature sometimes blocks the 
+                             Added fallback removal code for the cleanup operation at the end of this function, since OneDrive's Files On Demand feature sometimes blocks the
                              expanded .intunewin file cleanup process.
     #>
     [CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName = "MSI")]
@@ -207,18 +207,9 @@ function Add-IntuneWin32App {
         [switch]$UseAzCopy
     )
     Begin {
-        # Ensure required authentication header variable exists
-        if ($Global:AuthenticationHeader -eq $null) {
-            Write-Warning -Message "Authentication token was not found, use Connect-MSIntuneGraph before using this function"; break
-        }
-        else {
-            $TokenLifeTime = ($Global:AuthenticationHeader.ExpiresOn - (Get-Date).ToUniversalTime()).Minutes
-            if ($TokenLifeTime -le 0) {
-                Write-Warning -Message "Existing token found but has expired, use Connect-MSIntuneGraph to request a new authentication token"; break
-            }
-            else {
-                Write-Verbose -Message "Current authentication token expires in (minutes): $($TokenLifeTime)"
-            }
+        # Ensure connection to MgGraph is made
+        if ($null -eq (Get-MgContext)) {
+            Write-Warning -Message "Use Connect-MgGraph before using this function"; break
         }
 
         # Set script variable for error action preference
@@ -273,7 +264,7 @@ function Add-IntuneWin32App {
                         if (-not($PSBoundParameters["Developer"])) {
                             $Developer = [string]::Empty
                         }
-                        
+
                         # Generate Win32 application body
                         $AppBodySplat = @{
                             "MSI" = $true
@@ -345,7 +336,7 @@ function Add-IntuneWin32App {
                 if (($DetectionRule.'@odata.type' -contains "#microsoft.graph.win32LobAppPowerShellScriptDetection") -and (@($DetectionRules).'@odata.type'.Count -gt 1)) {
                     Write-Warning -Message "Multiple PowerShell Script detection rules were detected, this is not a supported configuration"; break
                 }
-               
+
                 # Add detection rules to Win32 app body object
                 Write-Verbose -Message "Detection rule objects passed validation checks, attempting to add to existing Win32 app body"
                 $Win32AppBody.Add("detectionRules", $DetectionRule)
@@ -453,7 +444,7 @@ function Add-IntuneWin32App {
                                 # Wait for Intune service to process the commit file request
                                 Write-Verbose -Message "Waiting for Intune service to process the commit file request"
                                 $CommitFileRequest = Wait-IntuneWin32AppFileProcessing -Stage "CommitFile" -Resource $FilesUri
-                                
+
                                 # Update committedContentVersion property for Win32 app
                                 Write-Verbose -Message "Updating committedContentVersion property with ID '$($Win32MobileAppContentVersionRequest.id)' for Win32 app with ID: $($Win32MobileAppRequest.id)"
                                 $Win32AppFileCommitBody = [ordered]@{

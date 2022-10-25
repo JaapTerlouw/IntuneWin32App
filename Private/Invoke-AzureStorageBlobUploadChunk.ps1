@@ -18,7 +18,7 @@ function Invoke-AzureStorageBlobUploadChunk {
         Version history:
         1.0.0 - (2020-01-04) Function created
         1.0.1 - (2021-04-02) Added UseBasicParsing to support conditions where IE first run experience have not been completed
-    #>    
+    #>
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -32,17 +32,16 @@ function Invoke-AzureStorageBlobUploadChunk {
         [ValidateNotNullOrEmpty()]
         [System.Object]$Bytes
     )
-	$Uri = "$($StorageUri)&comp=block&blockid=$($ChunkID)"
-	$ISOEncoding = [System.Text.Encoding]::GetEncoding("iso-8859-1")
-	$EncodedBytes = $ISOEncoding.GetString($Bytes)
-	$Headers = @{
-		"x-ms-blob-type" = "BlockBlob"
-	}
+    $Uri = "$($StorageUri)&comp=block&blockid=$($ChunkID)"
+    $ISOEncoding = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+    $EncodedBytes = $ISOEncoding.GetString($Bytes)
+    $Headers = @{
+        "x-ms-blob-type" = "BlockBlob"
+    }
 
-	try	{
-		$WebResponse = Invoke-WebRequest $Uri -Method "Put" -Headers $Headers -Body $EncodedBytes -UseBasicParsing -ErrorAction Stop
-	}
-	catch {
+    try	{
+        $WebResponse = Invoke-WebRequest $Uri -Method "Put" -Headers $Headers -Body $EncodedBytes -UseBasicParsing -ErrorAction Stop
+    } catch {
         Write-Warning -Message "Failed to upload chunk to Azure Storage blob. Error message: $($_.Exception.Message)"
-	} 
+    }
 }
